@@ -1,8 +1,10 @@
+import Link from "next/link";
 import {
   CircleCheck,
   Heart,
   ListChecks,
   Lock,
+  Play,
   Send,
   Shield,
   Trophy,
@@ -10,7 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import Flag, { type FlagCode } from "@/components/landing/Flag";
-import { ADD_TO_GROUP_URL, NAV_LINKS } from "@/constants/site";
+import { DEMO_URL, NAV_LINKS } from "@/constants/site";
 
 // mock: seeded fixtures; replace with TxLINE live data once the backend lands.
 const MATCHES: {
@@ -107,15 +109,28 @@ const TRUST_BADGES = [
   { title: "Built for Fans", sub: "By football lovers.", icon: Heart, color: "text-violet" },
 ];
 
+// Both CTAs open the in-browser demo so judges can test without a bot token.
 function TelegramButton({ className = "" }: { className?: string }) {
   return (
-    <a
-      href={ADD_TO_GROUP_URL}
+    <Link
+      href={DEMO_URL}
       className={`inline-flex items-center gap-2.5 rounded-xl bg-primary font-extrabold text-primary-foreground transition hover:opacity-90 ${className}`}
     >
       <Send className="size-[1.2em] fill-current" strokeWidth={1} />
       Add to Telegram
-    </a>
+    </Link>
+  );
+}
+
+function LiveDemoButton({ className = "" }: { className?: string }) {
+  return (
+    <Link
+      href={DEMO_URL}
+      className={`inline-flex items-center gap-2.5 rounded-xl bg-sky-soft font-extrabold text-primary transition hover:bg-sky-tint ${className}`}
+    >
+      <Play className="size-[1.1em] fill-current" strokeWidth={1} />
+      Live Demo
+    </Link>
   );
 }
 
@@ -186,8 +201,9 @@ function Hero() {
           <br />
           Turn your group chat into a World Cup prediction league.
         </p>
-        <div className="mt-8 flex items-center gap-4">
+        <div className="mt-8 flex flex-wrap items-center gap-4">
           <TelegramButton className="px-7 py-4 text-lg" />
+          <LiveDemoButton className="px-7 py-4 text-lg" />
           <GoldDashes />
         </div>
         <p className="mt-6 flex items-center gap-2.5 text-[15px] font-bold">

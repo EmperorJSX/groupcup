@@ -10,7 +10,8 @@ export type FlagCode =
   | "ARG"
   | "MEX"
   | "FRA"
-  | "AUS";
+  | "AUS"
+  | "BRA";
 
 function starPoints(cx: number, cy: number, r: number): string {
   const pts: string[] = [];
@@ -93,6 +94,13 @@ const FLAGS: Record<FlagCode, ReactNode> = {
     </>
   ),
   FRA: vertical("#0055A4", "#ffffff", "#EF4135"),
+  BRA: (
+    <>
+      <rect width="30" height="20" fill="#009C3B" />
+      <polygon points="15,2.5 27,10 15,17.5 3,10" fill="#FFDF00" />
+      <circle cx="15" cy="10" r="3.4" fill="#002776" />
+    </>
+  ),
   AUS: (
     <>
       <rect width="30" height="20" fill="#00247D" />

@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.github
+.env
+.env.*
+.claude-flow
+context
+filebrowser.db
+Dockerfile
+docker-compose.yml

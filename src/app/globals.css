@@ -51,6 +51,22 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Chat message entrance for the /demo bot simulation. */
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.msg-in {
+  animation: msg-in 0.3s ease-out both;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
