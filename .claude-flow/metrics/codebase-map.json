@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-19T18:32:48.521Z",
+  "projectRoot": "/home/ubuntu/projects/groupcup",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": true,
+    "hasClaudeConfig": false,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1784485968521
+}

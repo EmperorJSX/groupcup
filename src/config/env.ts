@@ -18,6 +18,11 @@ const CoreSchema = z.object({
 /**
  * Defines the schema for environment configuration. Provides type safety and
  * validation for every required setting. No Infisical, just process.env.
+ *
+ * Every var has a local-dev default so importing this module never throws:
+ * the Next landing must boot with zero config. The one truly required
+ * secret, TG_BOT_TOKEN, defaults to empty and is guarded in config/bot.ts,
+ * which only the bot entry points load.
  */
 const SecretsSchema = z.object({
   // ── App ──────────────────────────────────────────────────────────────────
@@ -25,16 +30,18 @@ const SecretsSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.url().default("http://localhost:3000"),
 
   // ── Database ─────────────────────────────────────────────────────────────
-  DATABASE_URL: z.url(),
+  DATABASE_URL: z
+    .url()
+    .default("postgresql://postgres:postgres@localhost:5432/groupcup"),
 
   // ── Redis ────────────────────────────────────────────────────────────────
-  REDIS_URL: z.string(),
+  REDIS_URL: z.string().default("redis://localhost:6379"),
 
   // ── Telegram ─────────────────────────────────────────────────────────────
-  TG_BOT_TOKEN: z.string(),
+  TG_BOT_TOKEN: z.string().default(""),
   TG_API_ROOT_URL: z.url().default("https://api.telegram.org"),
-  TG_WEBHOOK_URL: z.url(),
-  TG_SECRET_TOKEN: z.string(),
+  TG_WEBHOOK_URL: z.url().default("http://localhost:3000/api/tg-bot"),
+  TG_SECRET_TOKEN: z.string().default("dev-insecure-secret-token"),
 
   // ── Solana (devnet) ──────────────────────────────────────────────────────
   SOLANA_RPC: z.url().default("https://api.devnet.solana.com"),

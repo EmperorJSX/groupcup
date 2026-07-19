@@ -70,8 +70,12 @@ export const matches = pgTable("matches", {
   fixtureId: text("fixture_id").notNull().unique(),
   homeTeam: text("home_team").notNull(),
   awayTeam: text("away_team").notNull(),
+  /** Flag emoji for rendering ("🇧🇷"). */
+  homeFlag: text("home_flag"),
+  awayFlag: text("away_flag"),
   kickoffAt: timestamp("kickoff_at").notNull(),
-  status: text("status", { enum: ["scheduled", "live", "finished"] })
+  /** "locked" = kickoff reached, predictions closed, feed not yet live. */
+  status: text("status", { enum: ["scheduled", "locked", "live", "finished"] })
     .notNull()
     .default("scheduled"),
   homeScore: integer("home_score").notNull().default(0),
@@ -143,6 +147,10 @@ export const leaderboard = pgTable(
     correctCount: integer("correct_count").notNull().default(0),
     exactCount: integer("exact_count").notNull().default(0),
     predictionsCount: integer("predictions_count").notNull().default(0),
+    /** 1-based competition rank as of the last recompute (0 = never ranked). */
+    rank: integer("rank").notNull().default(0),
+    /** Rank before the last recompute; drives the up/down delta in the chat. */
+    prevRank: integer("prev_rank"),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [unique("leaderboard_group_user").on(t.groupId, t.userId)],

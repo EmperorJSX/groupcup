@@ -18,9 +18,11 @@ const attachErrorHandlers = (client: Redis, name: string) => {
   return client;
 };
 
-// Main shared Redis client.
+// Main shared Redis client. lazyConnect keeps module import side-effect
+// free: the connection opens on first command, so the Next app can load
+// routes that import this module without a Redis server running.
 export const redisClient = attachErrorHandlers(
-  new Redis(env.REDIS_URL),
+  new Redis(env.REDIS_URL, { lazyConnect: true }),
   "main",
 );
 
