@@ -1,8 +1,11 @@
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  schema: "./src/backend/db/schema.ts",
-  out: "./drizzle",
   dialect: "postgresql",
-  dbCredentials: { url: process.env.DATABASE_URL! },
+  schema: "./src/db/schema.ts",
+  out: "./src/db/drizzle",
+  dbCredentials: {
+    // Run via `bun run db:push` so Bun loads .env into the process.
+    url: process.env.DATABASE_URL!,
+  },
 });
