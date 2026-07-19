@@ -2,6 +2,15 @@
 
 Components that already exist — **reuse before creating**. Update this file whenever you add or change a component. All live in `src/components/` unless noted.
 
+## groupcup landing
+
+| Component | Purpose |
+| --------- | ------- |
+| `Flag` (`src/components/landing/Flag.tsx`) | Simplified inline-SVG national flags (`FlagCode`: QAT SEN ENG IRN ARG MEX FRA AUS), no external assets. |
+| Page-local in `src/app/page.tsx` | `TelegramButton`, `ChatBubble`, `MatchCard`, section components. Extract to `src/components/landing/` when a second page needs them. |
+
+> Everything below is the generic scaffold template for a different sample app. Ignore for groupcup.
+
 ## Shell & chrome
 
 | Component        | Purpose                                                              |

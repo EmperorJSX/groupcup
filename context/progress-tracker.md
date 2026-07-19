@@ -4,6 +4,15 @@ Update after every completed feature. Anyone reading this should immediately kno
 
 ---
 
+## groupcup status (2026-07-19)
+
+**Done:** Landing page (`src/app/page.tsx`) built 1:1 to `context/designs/landing-desktop.png`. Front-end mock, seeded data only, zero-config boot (`bun run dev`). Sticky nav (wordmark + links + Add to Telegram), hero (headline, CTA, trophy visual at `/brand/trophy-ball.png`, 4 floating chat bubbles), How it works (3 steps), Live Scoring (4 seeded match cards with SVG flags), trust badges row, footer. Brand tokens (azure `#0682fd`, gold/orange, navy on white, flat) live in `globals.css` `@theme`; root `layout.tsx` sets Nunito. Removed `src/app/api/[[...route]]` (imported a nonexistent `src/backend/`, broke boot). CTA links use `ADD_TO_GROUP_URL` from `src/constants/site.ts`; `NAV_LINKS` updated to the design's five links (Leaderboard/FAQs anchor to existing sections until real ones land).
+**Known gaps:** `public/brand/trophy-ball.png` still being generated (referenced, 404 until it lands). Pre-existing type error in `src/types/bot.ts` (missing `@/bot/classes/Context`, bot worker's WIP). No FAQ/leaderboard sections yet.
+
+> Everything below is the generic scaffold template for a different sample app. Ignore for groupcup.
+
+---
+
 ## Current Status
 
 **Phase:** 2 complete (design-system foundation); Phase 3 in progress — `/documentation` page + **MCP server** done, per-project docs editor still pending.
