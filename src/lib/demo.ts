@@ -1,4 +1,5 @@
 import { applyScoreEvent, getLeaderboard, lockMatch } from "@/db/queries";
+import { activeDbBackend } from "@/db/store";
 import { recomputeLeaderboard } from "@/scoring";
 import { onScoreEvent, replayMatch } from "@/txline";
 import { DEMO_FIXTURE } from "./mock";
@@ -23,7 +24,10 @@ export async function runDemo(): Promise<void> {
   const { group, matchIds } = await seedDemo();
   const demoMatchId = matchIds.get(DEMO_FIXTURE)!;
 
-  console.log(`Seeded group "${group.title}" with 8 players and 3 matches.\n`);
+  console.log(
+    `Seeded group "${group.title}" with 8 players and 3 matches ` +
+      `(db: ${activeDbBackend()}).\n`,
+  );
   console.log("Kickoff. Predictions locked for the demo match.");
   await lockMatch(demoMatchId);
 

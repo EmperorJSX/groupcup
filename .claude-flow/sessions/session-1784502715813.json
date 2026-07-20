@@ -1,0 +1,15 @@
+{
+  "id": "session-1784502715813",
+  "startedAt": "2026-07-19T23:11:55.813Z",
+  "cwd": "/home/ubuntu/projects/groupcup",
+  "context": {},
+  "metrics": {
+    "edits": 17,
+    "commands": 0,
+    "tasks": 0,
+    "errors": 0
+  },
+  "restoredAt": "2026-07-19T23:11:56.053Z",
+  "endedAt": "2026-07-19T23:17:11.643Z",
+  "duration": 315830
+}

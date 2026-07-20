@@ -46,7 +46,7 @@ class Bot {
       .space()
       .add(Fmt.builder("Quick Start").escape().bold())
       .newLine()
-      .add(Fmt.escape("Add me to your group chat and send /matches. Type /help for all commands."))
+      .add(Fmt.escape("Add me to your group chat and send /predict. Type /help for all commands."))
       .build();
 
     await ctx.replyWithHtml(message, {

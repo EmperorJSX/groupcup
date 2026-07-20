@@ -1,7 +1,5 @@
-import { eq } from "drizzle-orm";
-import db from "@/db/db";
-import { leaderboard, matches, polls, predictions, users } from "@/db/schema";
 import type { LeaderRow } from "@/db/queries";
+import { store } from "@/db/store";
 import { rankStandings, scorePrediction } from "./core";
 
 export * from "./core";
@@ -15,23 +13,7 @@ export type { LeaderRow } from "@/db/queries";
  * for a given db state.
  */
 export async function recomputeLeaderboard(groupId: number): Promise<LeaderRow[]> {
-  const rows = await db
-    .select({
-      predictionId: predictions.id,
-      storedPoints: predictions.points,
-      pick: predictions.pick,
-      userId: predictions.userId,
-      firstName: users.firstName,
-      username: users.username,
-      matchStatus: matches.status,
-      home: matches.homeScore,
-      away: matches.awayScore,
-    })
-    .from(predictions)
-    .innerJoin(polls, eq(polls.id, predictions.pollId))
-    .innerJoin(matches, eq(matches.id, polls.matchId))
-    .innerJoin(users, eq(users.id, predictions.userId))
-    .where(eq(polls.groupId, groupId));
+  const rows = await store.predictionRowsForGroup(groupId);
 
   type Agg = { name: string; points: number; correct: number; count: number };
   const byUser = new Map<number, Agg>();
@@ -54,15 +36,10 @@ export async function recomputeLeaderboard(groupId: number): Promise<LeaderRow[]
     byUser.set(r.userId, agg);
   }
   for (const u of pointsUpdates) {
-    await db
-      .update(predictions)
-      .set({ points: u.points })
-      .where(eq(predictions.id, u.id));
+    await store.setPredictionPoints(u.id, u.points);
   }
 
-  const existing = await db.query.leaderboard.findMany({
-    where: eq(leaderboard.groupId, groupId),
-  });
+  const existing = await store.leaderboardRows(groupId);
   const prevRanks = new Map(existing.map((e) => [e.userId, e.rank]));
 
   const standings = rankStandings(
@@ -72,7 +49,7 @@ export async function recomputeLeaderboard(groupId: number): Promise<LeaderRow[]
 
   for (const s of standings) {
     const agg = byUser.get(s.userId)!;
-    const values = {
+    await store.upsertLeaderboardRow({
       groupId,
       userId: s.userId,
       points: s.points,
@@ -81,14 +58,7 @@ export async function recomputeLeaderboard(groupId: number): Promise<LeaderRow[]
       rank: s.rank,
       prevRank: prevRanks.get(s.userId) ?? null,
       updatedAt: new Date(),
-    };
-    await db
-      .insert(leaderboard)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [leaderboard.groupId, leaderboard.userId],
-        set: values,
-      });
+    });
   }
 
   return standings.map((s) => ({
@@ -97,4 +67,21 @@ export async function recomputeLeaderboard(groupId: number): Promise<LeaderRow[]
     rank: s.rank,
     delta: s.delta,
   }));
+}
+
+/** PROD-BUILD contract alias for recomputeLeaderboard. */
+export const computeLeaderboard = recomputeLeaderboard;
+
+/**
+ * Finalise a match by TxLINE fixture id at its current score: mark it
+ * finished, settle its polls, and recompute the standings of every group
+ * that ran a poll on it. No-op for unknown fixtures.
+ */
+export async function settleMatch(fixtureId: string): Promise<void> {
+  const match = await store.findMatchByFixture(fixtureId);
+  if (!match) return;
+  await store.applyScore(fixtureId, match.homeScore, match.awayScore, true);
+  for (const groupId of await store.groupIdsWithPolls(match.id)) {
+    await recomputeLeaderboard(groupId);
+  }
 }

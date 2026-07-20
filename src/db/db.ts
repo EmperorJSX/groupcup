@@ -11,7 +11,11 @@ const url =
   process.env.DATABASE_URL ??
   "postgres://postgres:postgres@localhost:5432/groupcup";
 
-const client = postgres(url);
+// Short connect timeout (seconds) so the in-memory fallback in ./store kicks
+// in fast when no postgres is running.
+const client = postgres(url, {
+  connect_timeout: Number(process.env.PG_CONNECT_TIMEOUT ?? 3),
+});
 const db = drizzle(client, { schema });
 
 export { schema };

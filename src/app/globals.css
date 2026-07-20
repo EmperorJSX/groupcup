@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* groupcup brand tokens, sampled from context/designs/landing-desktop.png.
-   Flat and vibrant: azure blue, warm gold/orange, dark navy on white. No gradients. */
+   Flat and vibrant: azure blue, warm gold/orange, dark navy on white. No gradients.
+   Every color is a semantic token; the .dark block flips them all. */
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #0b1b4a;
   --card: #ffffff;
@@ -22,6 +26,30 @@
   --bubble-cream: #fef6e7;
   --bubble-green: #e9f6e9;
   --bubble-violet: #f8f4fe;
+}
+
+/* Dark: deep navy surfaces, same flat brand accents nudged brighter for contrast. */
+.dark {
+  color-scheme: dark;
+  --background: #0a1122;
+  --foreground: #e8edf8;
+  --card: #101a31;
+  --muted-foreground: #9aa6c2;
+  --faint-foreground: #64718e;
+  --border: #1e2a47;
+  --primary: #2f96fe;
+  --primary-foreground: #ffffff;
+  --sky-tint: #0d1529;
+  --sky-soft: #17243f;
+  --gold: #ffb31f;
+  --orange: #ff8b26;
+  --green: #25b967;
+  --violet: #8f75f7;
+  --live: #f25156;
+  --bubble-blue: #12213c;
+  --bubble-cream: #2a2213;
+  --bubble-green: #122619;
+  --bubble-violet: #201a38;
 }
 
 @theme inline {
@@ -49,6 +77,14 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Element-selector specificity, so Tailwind cursor-* classes and [disabled] still win. */
+button, [role="button"], a[href], label[for], summary {
+  cursor: pointer;
+}
+button:disabled, [disabled] {
+  cursor: not-allowed;
 }
 
 /* Chat message entrance for the /demo bot simulation. */

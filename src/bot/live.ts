@@ -3,16 +3,14 @@ import type { GrammyBotType } from "@/config/bot";
 import Fmt from "./classes/Fmt";
 import {
   getLeaderboard,
-  lockMatch,
   onScoreEvent,
   recomputeLeaderboard,
   type LeaderRow,
   type ScoreEvent,
 } from "./engine";
 import {
-  isMatchLocked,
+  closeMatchPredictions,
   loadMatchPollRefs,
-  markMatchLocked,
   type PollRef,
 } from "./handler/matches";
 import { renderLeaderboard } from "./handler/leaderboard";
@@ -47,17 +45,7 @@ async function broadcastScoreEvent(
   if (!refs.length) return;
 
   // First event for this match: the ball is rolling, close predictions
-  if (!(await isMatchLocked(event.matchId))) {
-    await markMatchLocked(event.matchId);
-    await lockMatch(event.matchId).catch((error) =>
-      console.error(`lockMatch(${event.matchId}) failed:`, error),
-    );
-
-    for (const ref of refs) {
-      // Poll may already be closed or deleted; not worth failing the update
-      await bot.api.stopPoll(ref.chatId, ref.messageId).catch(() => undefined);
-    }
-  }
+  await closeMatchPredictions(bot.api, event.matchId);
 
   const isFinal = event.type === FINAL_EVENT;
 

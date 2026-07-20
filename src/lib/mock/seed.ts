@@ -1,6 +1,3 @@
-import { inArray } from "drizzle-orm";
-import db from "@/db/db";
-import { matches, polls } from "@/db/schema";
 import {
   getOrCreateGroup,
   getOrCreateUser,
@@ -8,6 +5,7 @@ import {
   type Group,
   type User,
 } from "@/db/queries";
+import { store } from "@/db/store";
 import { recomputeLeaderboard } from "@/scoring";
 import { getOrCreateWallet } from "@/solana";
 import {
@@ -59,18 +57,11 @@ export async function seedDemo(
       awayScore: 0,
       finalizedAt: null,
     };
-    const [row] = await db
-      .insert(matches)
-      .values(values)
-      .onConflictDoUpdate({ target: matches.fixtureId, set: values })
-      .returning();
+    const row = await store.upsertMatch(values);
     matchIds.set(m.fixtureId, row.id);
   }
   // Re-open any polls left locked/settled by a previous demo run.
-  await db
-    .update(polls)
-    .set({ status: "open", settledAt: null })
-    .where(inArray(polls.matchId, [...matchIds.values()]));
+  await store.reopenPolls([...matchIds.values()]);
 
   for (const p of MOCK_PREDICTIONS) {
     const user = byTgId.get(p.tgId);

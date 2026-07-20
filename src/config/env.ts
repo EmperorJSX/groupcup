@@ -30,21 +30,30 @@ const SecretsSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.url().default("http://localhost:3000"),
 
   // ── Database ─────────────────────────────────────────────────────────────
+  // TODO: point DATABASE_URL at the real postgres before deploying
   DATABASE_URL: z
     .url()
     .default("postgresql://postgres:postgres@localhost:5432/groupcup"),
 
   // ── Redis ────────────────────────────────────────────────────────────────
+  // TODO: point REDIS_URL at the real redis before deploying
   REDIS_URL: z.string().default("redis://localhost:6379"),
 
   // ── Telegram ─────────────────────────────────────────────────────────────
+  // TODO: set TG_BOT_TOKEN from @BotFather (required to run the bot; the
+  // Next landing boots fine without it)
   TG_BOT_TOKEN: z.string().default(""),
   TG_API_ROOT_URL: z.url().default("https://api.telegram.org"),
+  // TODO: set TG_WEBHOOK_URL to the public https URL of POST /api/tg-bot,
+  // then register it with `bun run set-webhook`
   TG_WEBHOOK_URL: z.url().default("http://localhost:3000/api/tg-bot"),
+  // TODO: set TG_SECRET_TOKEN to a long random string before going live
   TG_SECRET_TOKEN: z.string().default("dev-insecure-secret-token"),
 
   // ── Solana (devnet) ──────────────────────────────────────────────────────
+  // TODO: swap SOLANA_RPC for a paid endpoint if devnet rate limits bite
   SOLANA_RPC: z.url().default("https://api.devnet.solana.com"),
+  // TODO: set WALLET_ENCRYPTION_KEY to a strong secret before real funds
   WALLET_ENCRYPTION_KEY: z.string().default("dev-insecure-wallet-key"),
 
   // ── TxLINE (devnet score data) ───────────────────────────────────────────

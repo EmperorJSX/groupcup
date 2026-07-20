@@ -4,3 +4,4 @@
 export { default as db, schema } from "./db";
 export * from "./schema";
 export * from "./queries";
+export { store, activeDbBackend } from "./store";

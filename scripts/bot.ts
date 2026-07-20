@@ -78,7 +78,7 @@ async function setBotCommands(): Promise<void> {
     );
     await bot.api.setMyCommands(
       [
-        { command: "matches", description: "⚽ Post the prediction polls" },
+        { command: "predict", description: "⚽ Post the prediction polls" },
         { command: "leaderboard", description: "📊 Show the standings" },
         { command: "help", description: "📚 Show available commands" },
       ],

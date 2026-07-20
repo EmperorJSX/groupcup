@@ -246,7 +246,7 @@ export default class Context extends GrammyContext {
     return this.answerCallbackQuery({
       text: alertMessage || undefined,
       show_alert: showAsPopup,
-    }).catch();
+    }).catch(() => undefined);
   }
 
   /**

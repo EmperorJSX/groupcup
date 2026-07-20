@@ -1,8 +1,6 @@
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
 import { createKeyPairSignerFromPrivateKeyBytes } from "gill";
-import db from "@/db/db";
-import { wallets } from "@/db/schema";
+import { store } from "@/db/store";
 
 /** AES-256-GCM key derived from the env secret (dev default is fine on devnet). */
 const ENC_KEY = createHash("sha256")
@@ -29,9 +27,7 @@ function encryptSeed(seed: Uint8Array): string {
 export async function getOrCreateWallet(
   userId: number,
 ): Promise<{ pubkey: string }> {
-  const existing = await db.query.wallets.findFirst({
-    where: eq(wallets.userId, userId),
-  });
+  const existing = await store.findWallet(userId);
   if (existing) return { pubkey: existing.publicKey };
 
   const seed = new Uint8Array(
@@ -40,10 +36,7 @@ export async function getOrCreateWallet(
   const signer = await createKeyPairSignerFromPrivateKeyBytes(seed);
   const pubkey = signer.address as string;
   // Deterministic derivation: a concurrent-insert race produces the same key,
-  // so onConflictDoNothing is safe.
-  await db
-    .insert(wallets)
-    .values({ userId, publicKey: pubkey, encryptedSecret: encryptSeed(seed) })
-    .onConflictDoNothing();
+  // so the conflict-ignoring insert is safe.
+  await store.createWallet(userId, pubkey, encryptSeed(seed));
   return { pubkey };
 }

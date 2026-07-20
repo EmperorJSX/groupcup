@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CircleCheck, RotateCcw, Trophy } from "lucide-react";
-import Flag, { type FlagCode } from "@/components/landing/Flag";
+import Flag from "@/components/landing/Flag";
 import {
-  rankStandings,
-  scorePrediction,
-  type MatchResult,
-  type Outcome,
-  type Standing,
-} from "@/scoring/core";
+  FIXTURE_FLAGS,
+  computeStandings,
+  playerStyle,
+  resultsFor,
+} from "@/components/league/standings";
+import Select from "@/components/ui/Select";
+import ThemeToggle from "@/components/theme/ThemeToggle";
+import type { MatchResult, Outcome, Standing } from "@/scoring/core";
 import { RECORDED_FIXTURES } from "@/txline/fixtures";
 import type { ScoreEvent } from "@/txline/events";
 import {
@@ -33,8 +35,7 @@ import { sleep } from "@/utils/helper";
 const FIXTURE = "txl-wc26-final";
 const MATCH = MOCK_MATCHES.find((m) => m.fixtureId === FIXTURE)!;
 const EVENTS = RECORDED_FIXTURES[FIXTURE];
-const HOME_FLAG: FlagCode = "ARG";
-const AWAY_FLAG: FlagCode = "BRA";
+const [HOME_FLAG, AWAY_FLAG] = FIXTURE_FLAGS[FIXTURE];
 
 const PICKS = new Map<string, Outcome>(
   MOCK_PREDICTIONS.filter((p) => p.fixtureId === FIXTURE).map((p) => [
@@ -43,20 +44,9 @@ const PICKS = new Map<string, Outcome>(
   ]),
 );
 
-function fullTimeScore(fixtureId: string): MatchResult {
-  const events = RECORDED_FIXTURES[fixtureId];
-  const last = events[events.length - 1];
-  return { home: last.home, away: last.away };
-}
-
-/** Points each player carries into the final: both semis, real engine math. */
-const CARRIED = new Map<string, number>(
-  MOCK_PLAYERS.map((p) => [
-    p.tgId,
-    MOCK_PREDICTIONS.filter(
-      (q) => q.tgId === p.tgId && q.fixtureId !== FIXTURE,
-    ).reduce((sum, q) => sum + scorePrediction(q.pick, fullTimeScore(q.fixtureId)), 0),
-  ]),
+/** Full-time results every player carries into the final: real engine math. */
+const CARRIED_RESULTS = resultsFor(
+  MOCK_MATCHES.filter((m) => m.fixtureId !== FIXTURE).map((m) => m.fixtureId),
 );
 
 /**
@@ -68,30 +58,9 @@ function standingsAt(
   score: MatchResult | null,
   prevRanks?: ReadonlyMap<number, number>,
 ): Standing[] {
-  return rankStandings(
-    MOCK_PLAYERS.map((p, i) => ({
-      userId: i + 1,
-      name: p.name,
-      points:
-        (CARRIED.get(p.tgId) ?? 0) +
-        (score ? scorePrediction(PICKS.get(p.tgId) ?? "draw", score) : 0),
-    })),
-    prevRanks,
-  );
-}
-
-const PLAYER_STYLES = [
-  { text: "text-primary", bg: "bg-primary" },
-  { text: "text-orange", bg: "bg-orange" },
-  { text: "text-green", bg: "bg-green" },
-  { text: "text-violet", bg: "bg-violet" },
-  { text: "text-live", bg: "bg-live" },
-  { text: "text-gold", bg: "bg-gold" },
-];
-
-function styleOf(name: string) {
-  const i = MOCK_PLAYERS.findIndex((p) => p.name === name);
-  return PLAYER_STYLES[(i < 0 ? 0 : i) % PLAYER_STYLES.length];
+  const results = new Map(CARRIED_RESULTS);
+  if (score) results.set(FIXTURE, score);
+  return computeStandings(results, prevRanks);
 }
 
 type Msg =
@@ -113,6 +82,13 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   : never;
 type NewMsg = DistributiveOmit<Msg, "id">;
 
+type Speed = "1" | "2" | "3";
+const SPEED_OPTIONS: { value: Speed; label: string }[] = [
+  { value: "1", label: "Normal speed" },
+  { value: "2", label: "Fast (2x)" },
+  { value: "3", label: "Very fast (3x)" },
+];
+
 const OPTION_ORDER: Outcome[] = ["home", "draw", "away"];
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 const ROW_H = 34;
@@ -126,17 +102,20 @@ function clockAt(totalMin: number): string {
 function MemberAvatar({ name }: { name: string }) {
   return (
     <span
-      className={`flex size-8 shrink-0 select-none items-center justify-center rounded-full text-[13px] font-extrabold text-primary-foreground ${styleOf(name).bg}`}
+      className={`flex size-8 shrink-0 select-none items-center justify-center rounded-full text-[13px] font-extrabold text-primary-foreground ${playerStyle(name).bg}`}
     >
       {name[0]}
     </span>
   );
 }
 
+// Icon avatar instead of the logo PNG: the PNG has a baked-in white
+// background, this recolors with the theme.
 function BotAvatar() {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src="/brand/logo-icon.png" alt="" className="size-8 shrink-0 rounded-full" />
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold">
+      <Trophy className="size-4.5 text-primary-foreground" strokeWidth={2.4} />
+    </span>
   );
 }
 
@@ -229,7 +208,7 @@ function PollCard({ poll, time }: { poll: PollState; time: string }) {
                     {voters.slice(0, 3).map((name) => (
                       <span
                         key={name}
-                        className={`flex size-4 items-center justify-center rounded-full text-[8px] font-extrabold text-primary-foreground ring-1 ring-card ${styleOf(name).bg}`}
+                        className={`flex size-4 items-center justify-center rounded-full text-[8px] font-extrabold text-primary-foreground ring-1 ring-card ${playerStyle(name).bg}`}
                       >
                         {name[0]}
                       </span>
@@ -374,7 +353,14 @@ export default function DemoChat() {
   const [poll, setPoll] = useState<PollState | null>(null);
   const [board, setBoard] = useState<Standing[] | null>(null);
   const [finished, setFinished] = useState(false);
+  const [speed, setSpeed] = useState<Speed>("1");
+  const speedRef = useRef(1);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const changeSpeed = (v: Speed) => {
+    setSpeed(v);
+    speedRef.current = Number(v);
+  };
 
   const scrollToEnd = () =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -392,9 +378,19 @@ export default function DemoChat() {
       const withId = { ...m, id: ++seq } as Msg;
       setMessages((prev) => [...prev, withId]);
     };
+    // The board stays the last message while the match is live, so score
+    // cards and half-time pills slot in above it and its rows animate in
+    // place while goals stream.
+    const pushAboveBoard = (m: Msg) => {
+      setMessages((prev) => {
+        const idx = prev.findIndex((x) => x.kind === "board");
+        if (idx < 0) return [...prev, m];
+        return [...prev.slice(0, idx), m, ...prev.slice(idx)];
+      });
+    };
     const tick = (mins = 1) => clockAt((clock += mins));
     const wait = async (ms: number) => {
-      await sleep(ms);
+      await sleep(ms / speedRef.current);
       return alive;
     };
 
@@ -474,19 +470,13 @@ export default function DemoChat() {
           updateBoard({ home: event.home, away: event.away });
           push({ kind: "board", time });
         } else if (event.kind === "goal" || event.kind === "full_time") {
-          const scoreMsg = { kind: "score", event, time, id: ++seq } as Msg;
           updateBoard({ home: event.home, away: event.away });
-          // The board stays the last message, so score cards slot in above
-          // it and its rows animate in place while goals stream.
-          setMessages((prev) => {
-            const idx = prev.findIndex((m) => m.kind === "board");
-            if (idx < 0) return [...prev, scoreMsg];
-            return [...prev.slice(0, idx), scoreMsg, ...prev.slice(idx)];
-          });
+          pushAboveBoard({ kind: "score", event, time, id: ++seq } as Msg);
         } else if (event.kind === "half_time") {
-          push({
+          pushAboveBoard({
             kind: "service",
             text: `⏸ Half-time. ${MATCH.homeTeam} ${event.home} : ${event.away} ${MATCH.awayTeam}`,
+            id: ++seq,
           });
         } else if (event.kind === "game_finalised") {
           updateBoard({ home: event.home, away: event.away });
@@ -534,7 +524,7 @@ export default function DemoChat() {
             </li>
           ))}
         </ul>
-        <div className="mt-7 flex items-center gap-3">
+        <div className="mt-7 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={replay}
@@ -548,6 +538,17 @@ export default function DemoChat() {
           >
             <ArrowLeft className="size-4.5" /> Back to site
           </Link>
+          <ThemeToggle className="size-12 rounded-xl border border-border bg-card text-foreground hover:bg-sky-tint" />
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <span className="text-[14px] font-bold text-muted-foreground">Playback</span>
+          <Select
+            value={speed}
+            onChange={changeSpeed}
+            options={SPEED_OPTIONS}
+            ariaLabel="Playback speed"
+            className="w-44"
+          />
         </div>
       </aside>
 
@@ -567,6 +568,7 @@ export default function DemoChat() {
               {subtitle}
             </span>
           </span>
+          <ThemeToggle className="rounded-full p-2 text-primary-foreground hover:bg-primary-foreground/10" />
           <button
             type="button"
             onClick={replay}
@@ -588,7 +590,7 @@ export default function DemoChat() {
                 case "member": {
                   return (
                     <Bubble key={m.id} avatar={<MemberAvatar name={m.name} />}>
-                      <span className={`block text-[13px] font-extrabold ${styleOf(m.name).text}`}>
+                      <span className={`block text-[13px] font-extrabold ${playerStyle(m.name).text}`}>
                         {m.name}
                       </span>
                       <span className="block text-[14px] font-semibold leading-snug">

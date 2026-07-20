@@ -1,4 +1,5 @@
 import ms from "ms";
+import type { Api } from "grammy";
 import redis, { getRedisPrefix } from "@/config/redis";
 import type Context from "../classes/Context";
 import Fmt from "../classes/Fmt";
@@ -7,6 +8,7 @@ import {
   hasKickedOff,
   kickoffMs,
   listOpenMatches,
+  lockMatch,
   type Match,
 } from "../engine";
 import { flagFor } from "@/constants/teams";
@@ -31,6 +33,8 @@ export interface PollRef {
   away: string;
   homeFlag: string;
   awayFlag: string;
+  /** Kickoff as epoch ms, so late poll answers can be rejected offline. */
+  kickoffMs: number;
 }
 
 /** Poll answer option order: index 0 home win, 1 draw, 2 away win. */
@@ -77,6 +81,29 @@ export async function isMatchLocked(matchId: number): Promise<boolean> {
 /** Marks predictions for the match as closed. */
 export async function markMatchLocked(matchId: number): Promise<void> {
   await redis.set(matchLockKey(matchId), "1", "PX", POLL_REF_TTL_MS);
+}
+
+/**
+ * Closes predictions for a match everywhere: marks the lock in Redis, tells
+ * the engine, and stops every posted poll across all group chats. The single
+ * lock path, used by both the live score feed (first event for a match) and
+ * the poll answer handler (first vote after kickoff). Safe to call twice.
+ */
+export async function closeMatchPredictions(
+  api: Api,
+  matchId: number,
+): Promise<void> {
+  if (await isMatchLocked(matchId)) return;
+  await markMatchLocked(matchId);
+
+  await lockMatch(matchId).catch((error) =>
+    console.error(`lockMatch(${matchId}) failed:`, error),
+  );
+
+  for (const ref of await loadMatchPollRefs(matchId)) {
+    // Poll may already be closed or deleted; not worth failing the lock
+    await api.stopPoll(ref.chatId, ref.messageId).catch(() => undefined);
+  }
 }
 
 /** "Sun, 14 Jun 2026 18:00 UTC" from any kickoff shape. */
@@ -135,6 +162,7 @@ export async function postMatchPolls(ctx: Context): Promise<void> {
       away: match.away,
       homeFlag,
       awayFlag,
+      kickoffMs: kickoffMs(match),
     });
     posted++;
   }

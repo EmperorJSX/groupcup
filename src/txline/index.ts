@@ -1,10 +1,93 @@
 import { sleep } from "@/utils/helper";
-import { emitScoreEvent, onScoreEvent, type ScoreEvent } from "./events";
+import {
+  fetchFixtures,
+  fetchScore,
+  type TxlineFixture,
+  type TxlineScore,
+} from "./client";
+import {
+  emitScoreEvent,
+  onScoreEvent,
+  type ScoreEvent,
+  type ScoreListener,
+} from "./events";
 import { RECORDED_FIXTURES } from "./fixtures";
+import { startLiveStream } from "./stream";
 
 export * from "./events";
 export { RECORDED_FIXTURES } from "./fixtures";
 export { watchLive } from "./live";
+export { startLiveStream, stopLiveStream } from "./stream";
+export { TxlineError, type TxlineFixture, type TxlineScore } from "./client";
+
+/**
+ * LIVE with replay fallback: World Cup fixtures from the real TxLINE devnet
+ * feed; when the feed (or its auth chain) is unreachable, the seeded demo
+ * fixtures so the product keeps working after the matches end.
+ */
+export async function getFixtures(): Promise<TxlineFixture[]> {
+  try {
+    const live = await fetchFixtures();
+    if (live.length > 0) return live;
+  } catch (err) {
+    warnFallback("getFixtures", err);
+  }
+  const { MOCK_MATCHES } = await import("@/lib/mock");
+  const now = Date.now();
+  return MOCK_MATCHES.map((m) => ({
+    fixtureId: m.fixtureId,
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    kickoffAt: new Date(now + m.kickoffInMin * 60_000),
+    raw: { ...m, source: "replay" },
+  }));
+}
+
+/**
+ * LIVE with replay fallback: the current score of a fixture, from the real
+ * snapshot endpoint or the recorded event stream's latest state.
+ */
+export async function getScore(
+  fixtureId: string | number,
+): Promise<TxlineScore | undefined> {
+  try {
+    return await fetchScore(fixtureId);
+  } catch (err) {
+    warnFallback(`getScore(${fixtureId})`, err);
+  }
+  const events = RECORDED_FIXTURES[String(fixtureId)];
+  const last = events?.[events.length - 1];
+  if (!last) return undefined;
+  return {
+    fixtureId: last.fixtureId,
+    home: last.home,
+    away: last.away,
+    minute: last.minute,
+    finished: last.kind === "game_finalised",
+    raw: { source: "replay" },
+  };
+}
+
+/**
+ * Subscribe to the score feed and start the live TxLINE stream. Listeners
+ * receive identical events whether they come from the devnet SSE stream or
+ * replayMatch; if live mode cannot come up, replay is the only source and
+ * nothing breaks. Returns an unsubscribe fn.
+ */
+export function subscribeScores(cb: ScoreListener): () => void {
+  const off = onScoreEvent(cb);
+  void startLiveStream();
+  return off;
+}
+
+let warnedFallback = false;
+function warnFallback(what: string, err: unknown): void {
+  if (warnedFallback) return;
+  warnedFallback = true;
+  console.warn(
+    `[txline] ${what} falling back to replay data (${(err as Error).message})`,
+  );
+}
 
 /**
  * REPLAY mode: stream a recorded fixture's events to every onScoreEvent
@@ -35,23 +118,19 @@ export async function replayMatch(
 
 /**
  * Accepts a fixture id or a numeric db match id; also resolves the db row id
- * so replayed events carry event.matchId. db is imported lazily and failures
- * are swallowed: replay stays fully offline-capable.
+ * so replayed events carry event.matchId. The store is imported lazily and
+ * failures are swallowed: replay stays fully offline-capable.
  */
 async function resolveFixture(
   matchId: string | number,
 ): Promise<{ fixtureId: string; dbId?: number }> {
   const key = String(matchId);
   try {
-    const [{ default: db }, { matches }, { eq }] = await Promise.all([
-      import("@/db/db"),
-      import("@/db/schema"),
-      import("drizzle-orm"),
-    ]);
+    const { store } = await import("@/db/store");
     const byDbId = /^\d+$/.test(key) && !RECORDED_FIXTURES[key];
-    const match = await db.query.matches.findFirst({
-      where: byDbId ? eq(matches.id, Number(key)) : eq(matches.fixtureId, key),
-    });
+    const match = byDbId
+      ? await store.findMatchById(Number(key))
+      : await store.findMatchByFixture(key);
     if (match) return { fixtureId: match.fixtureId, dbId: match.id };
   } catch {
     // db unreachable: events just go out without a matchId.

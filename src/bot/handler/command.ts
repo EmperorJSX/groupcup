@@ -51,7 +51,7 @@ export const start: BotHandler = async (ctx) => {
       .newLine(2)
       .add(Fmt.emojiBuilder("soccerEmoji"))
       .space()
-      .add(Fmt.escape("Send /matches to post the prediction polls."))
+      .add(Fmt.escape("Send /predict to post the prediction polls."))
       .newLine()
       .add(Fmt.emojiBuilder("chartEmoji"))
       .space()
@@ -69,7 +69,10 @@ export const start: BotHandler = async (ctx) => {
 /**
  * Posts a prediction poll for every open match into the group
  */
-export const matches: BotHandler = groupOnly(postMatchPolls);
+export const predict: BotHandler = groupOnly(postMatchPolls);
+
+/** Alias for /predict kept for muscle memory */
+export const matches: BotHandler = predict;
 
 /**
  * Shows the group's leaderboard
@@ -81,7 +84,8 @@ export const leaderboard: BotHandler = groupOnly(showLeaderboard);
  */
 const commandDefinitions: Record<string, string> = {
   start: "Welcome and setup",
-  matches: "Post a prediction poll for every open match (groups)",
+  predict: "Post a prediction poll for every open match (groups)",
+  matches: "Alias of /predict",
   leaderboard: "Show the group standings (groups)",
   help: "Show this help message",
 };

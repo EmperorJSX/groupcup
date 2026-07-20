@@ -6,6 +6,7 @@ import {
   upsertPrediction,
 } from "../engine";
 import {
+  closeMatchPredictions,
   isMatchLocked,
   loadPollRef,
   PICK_OPTIONS,
@@ -56,7 +57,7 @@ export const handleMyChatMember: BotHandler = async (ctx) => {
     .space()
     .add(Fmt.escape("Top of the table takes the cup"))
     .newLine(2)
-    .add(Fmt.builder("Send /matches to post the first polls!").escape().bold())
+    .add(Fmt.builder("Send /predict to post the first polls!").escape().bold())
     .build();
 
   await ctx.api.sendMessage(chat.id, message, { parse_mode: "HTML" });
@@ -78,6 +79,12 @@ export const handlePollAnswer: BotHandler = async (ctx) => {
   if (!ref) return;
 
   if (await isMatchLocked(ref.matchId)) return;
+
+  // Kickoff has passed but no score event arrived yet: lock everything now
+  // and drop this vote. Poll answers have no chat, so rejection is silent.
+  if (Date.now() >= ref.kickoffMs) {
+    return closeMatchPredictions(ctx.api, ref.matchId);
+  }
 
   // An empty option list is a retracted vote; the last pick stands
   const optionIndex = answer.option_ids[0];

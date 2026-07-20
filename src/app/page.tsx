@@ -12,7 +12,13 @@ import {
   Zap,
 } from "lucide-react";
 import Flag, { type FlagCode } from "@/components/landing/Flag";
-import { DEMO_URL, NAV_LINKS } from "@/constants/site";
+import {
+  Footer,
+  LiveDemoButton,
+  Nav,
+  TelegramButton,
+} from "@/components/site/chrome";
+import { ADD_TO_GROUP_URL, BOT_USERNAME, DEMO_URL } from "@/constants/site";
 
 // mock: seeded fixtures; replace with TxLINE live data once the backend lands.
 const MATCHES: {
@@ -109,51 +115,23 @@ const TRUST_BADGES = [
   { title: "Built for Fans", sub: "By football lovers.", icon: Heart, color: "text-violet" },
 ];
 
-// Both CTAs open the in-browser demo so judges can test without a bot token.
-function TelegramButton({ className = "" }: { className?: string }) {
-  return (
-    <Link
-      href={DEMO_URL}
-      className={`inline-flex items-center gap-2.5 rounded-xl bg-primary font-extrabold text-primary-foreground transition hover:opacity-90 ${className}`}
-    >
-      <Send className="size-[1.2em] fill-current" strokeWidth={1} />
-      Add to Telegram
-    </Link>
-  );
-}
-
-function LiveDemoButton({ className = "" }: { className?: string }) {
-  return (
-    <Link
-      href={DEMO_URL}
-      className={`inline-flex items-center gap-2.5 rounded-xl bg-sky-soft font-extrabold text-primary transition hover:bg-sky-tint ${className}`}
-    >
-      <Play className="size-[1.1em] fill-current" strokeWidth={1} />
-      Live Demo
-    </Link>
-  );
-}
-
-function Nav() {
-  return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-6 px-6">
-        <a href="#" aria-label="GroupCup home">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/logo-wordmark.png" alt="groupcup" className="h-11 w-auto" />
-        </a>
-        <nav className="hidden items-center gap-9 text-[15px] font-bold lg:flex">
-          {NAV_LINKS.map((l) => (
-            <a key={l.label} href={l.href} className="transition hover:text-primary">
-              {l.label}
-            </a>
-          ))}
-        </nav>
-        <TelegramButton className="px-5 py-2.5 text-[15px]" />
-      </div>
-    </header>
-  );
-}
+const GROUP_FLOW = [
+  {
+    chip: `@${BOT_USERNAME}`,
+    title: "Invite the bot",
+    desc: "Open your Telegram group, tap Add Member, and pick the GroupCup bot.",
+  },
+  {
+    chip: "/start",
+    title: "Kick off your league",
+    desc: "The bot registers the group and posts a prediction poll before every match.",
+  },
+  {
+    chip: "/leaderboard",
+    title: "Vote, score, brag",
+    desc: "Everyone picks with one tap. Picks lock at kickoff, goals score in real time, the table settles it.",
+  },
+];
 
 function GoldDashes() {
   return (
@@ -214,7 +192,7 @@ function Hero() {
       <div className="relative mx-auto h-[440px] w-full max-w-[660px] sm:h-[520px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/brand/trophy-ball.png"
+          src="/brand/trophy-ball-t.png"
           alt="World Cup trophy and football"
           className="absolute left-1/2 top-1/2 w-[62%] -translate-x-1/2 -translate-y-1/2"
         />
@@ -254,6 +232,72 @@ function HowItWorks() {
             </div>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function AddToGroup() {
+  return (
+    <section id="add-to-group" className="mx-auto max-w-7xl scroll-mt-24 px-6 pb-14">
+      <div className="grid gap-10 rounded-3xl border border-border bg-card p-6 shadow-sm lg:grid-cols-2 lg:items-center lg:p-10">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Add it to your <span className="text-primary">group chat</span>
+          </h2>
+          <p className="mt-3 max-w-md text-[15px] font-semibold leading-relaxed text-muted-foreground">
+            GroupCup lives inside Telegram. No app to install, no accounts to
+            create: your group chat is the game.
+          </p>
+          <ol className="mt-7 space-y-6">
+            {GROUP_FLOW.map((step, i) => (
+              <li key={step.chip} className="flex items-start gap-4">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
+                  {i + 1}
+                </span>
+                <span>
+                  <span className="flex flex-wrap items-center gap-2.5">
+                    <span className="text-[16px] font-extrabold">{step.title}</span>
+                    <code className="rounded-lg bg-sky-soft px-2 py-0.5 text-[13px] font-extrabold text-primary">
+                      {step.chip}
+                    </code>
+                  </span>
+                  <span className="mt-1 block max-w-md text-[14px] font-semibold leading-snug text-muted-foreground">
+                    {step.desc}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <div className="rounded-3xl bg-sky-tint p-6 lg:p-8">
+          <p className="flex items-center gap-2 text-sm font-extrabold tracking-wide text-live">
+            <span className="size-2.5 animate-pulse rounded-full bg-live" />
+            TRY IT RIGHT NOW
+          </p>
+          <h3 className="mt-3 text-2xl font-extrabold tracking-tight">
+            No Telegram? The demo runs in your browser
+          </h3>
+          <p className="mt-3 text-[15px] font-semibold leading-relaxed text-muted-foreground">
+            The full league loop, prediction poll, kickoff lock, live TxLINE
+            goals, and a moving leaderboard, auto-plays on the real scoring
+            engine. Zero setup.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link
+              href={DEMO_URL}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-[15px] font-extrabold text-primary-foreground transition hover:opacity-90"
+            >
+              <Play className="size-4.5 fill-current" strokeWidth={1} /> Play the live demo
+            </Link>
+            <a
+              href={ADD_TO_GROUP_URL}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-6 py-3.5 text-[15px] font-extrabold text-primary transition hover:bg-sky-soft"
+            >
+              <Send className="size-4.5 fill-current" strokeWidth={1} /> t.me/{BOT_USERNAME}
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -301,6 +345,12 @@ function LiveScoring() {
             <br />
             Real-time bragging rights.
           </p>
+          <Link
+            href="/leaderboard"
+            className="mt-4 inline-flex items-center gap-2 text-[15px] font-extrabold text-primary transition hover:opacity-80"
+          >
+            <Trophy className="size-4.5" strokeWidth={2.4} /> See the league leaderboard
+          </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {MATCHES.map((m) => (
@@ -332,32 +382,6 @@ function TrustBadges() {
   );
 }
 
-function Footer() {
-  return (
-    <footer id="faqs" className="border-t border-border">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-6 py-10 md:flex-row">
-        <a href="#" className="flex items-center gap-2.5" aria-label="GroupCup home">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/logo-icon.png" alt="" className="size-9" />
-          <span className="text-xl font-extrabold">
-            group<span className="text-gold">cup</span>
-          </span>
-        </a>
-        <nav className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-sm font-bold text-muted-foreground">
-          {NAV_LINKS.map((l) => (
-            <a key={l.label} href={l.href} className="transition hover:text-primary">
-              {l.label}
-            </a>
-          ))}
-        </nav>
-        <p className="text-center text-[13px] font-semibold text-faint-foreground">
-          {"©"} 2026 GroupCup. A fan-made game, not affiliated with FIFA.
-        </p>
-      </div>
-    </footer>
-  );
-}
-
 export default function Home() {
   return (
     <>
@@ -365,6 +389,7 @@ export default function Home() {
       <main>
         <Hero />
         <HowItWorks />
+        <AddToGroup />
         <LiveScoring />
         <TrustBadges />
       </main>
